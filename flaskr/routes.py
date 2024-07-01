@@ -1,13 +1,17 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, Flask
+
 from werkzeug.utils import secure_filename
 import os
 import uuid
-from .db import get_db
+from flask_cors import CORS
+from db import get_db
 
 
 main = Blueprint('main', __name__)
 
 ALLOWED_EXTENSIONS = {'epub'}
+
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -25,6 +29,8 @@ def save_file_with_unique_id(file):
 
 @main.route('/upload', methods=['POST'])
 def upload_file():
+
+
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -51,3 +57,5 @@ def upload_file():
 
     else:
         return jsonify({'error': 'File type not allowed'}), 400
+    
+

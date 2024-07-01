@@ -18,6 +18,6 @@ CREATE TABLE post (
 );
 
 CREATE TABLE files (
-    unique_filename TEXT PRIMARY KEY,
-    file_path TEXT NOT NULL
+  unique_filename TEXT PRIMARY KEY,
+  file_path TEXT NOT NULL
 );
