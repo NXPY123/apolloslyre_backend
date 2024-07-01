@@ -4,8 +4,9 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 from flask_cors import CORS
-from db import get_db
+from .db import get_db
 
+from .tasks import extract_epub
 
 main = Blueprint('main', __name__)
 
@@ -42,20 +43,44 @@ def upload_file():
     if file and allowed_file(file.filename):
 
         unique_filename, file_path = save_file_with_unique_id(file)
+        print(unique_filename, file_path)
         # Store the file_path in the database
         db = get_db()
         # STore unique_filename and file_path in the database
         db.execute('INSERT INTO files (unique_filename, file_path) VALUES (?, ?)', (unique_filename, file_path))
         db.commit()
         
-        '''
-         [Logic to process the file here] 
-        '''
+        # Send the file_path to the task queue. Get the id of the task
+        task = extract_epub.delay(file_path, unique_filename)
+        task_id = task.id
 
-        # Return a response with the unique_filename
-        return jsonify({'unique_filename': unique_filename}), 201
-
+        return jsonify({'task_id': task_id,
+                        "unique_filename": unique_filename,
+                        }), 200
     else:
-        return jsonify({'error': 'File type not allowed'}), 400
+        return jsonify({'error': 'Invalid file type'}), 400
     
+
+# Endpoint to get the status of the task
+@main.route('/status', methods=['GET'])
+def task_status():
+    task_id = request.args.get('task_id')
+    task = extract_epub.AsyncResult(task_id)
+    response = {
+        'state': task.state,
+        'task_id': task_id
+    }
+    return jsonify(response), 200
+
+# Endpoint to get the processed file
+@main.route('/processed', methods=['GET'])
+def processed_file():
+    unique_filename = request.args.get('unique_filename')
+    file_path = os.path.join(current_app.config['PROCESSED_FOLDER'], unique_filename)
+    if os.path.exists(file_path):
+        with open(file_path, mode='r') as file:
+            content = file.read()
+        return jsonify({'content': content}), 200
+    else:
+        return jsonify({'error': 'File not found'}), 404
 

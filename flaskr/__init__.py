@@ -48,7 +48,9 @@ def create_app(test_config=None):
     CELERY=dict(
         broker_url='redis://localhost:6379/0',
         result_backend='redis://localhost:6379/0',
-        task_ignore_result=True,
+        task_track_started=True,
+        task_ignore_result=False,
+        result_serializer='json',
     ),
 )
 
@@ -65,7 +67,7 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from routes import main
+    from flaskr.routes import main
     app.register_blueprint(main)
 
     # a simple page that says hello
@@ -73,13 +75,15 @@ def create_app(test_config=None):
     def hello():
         return 'Hello, World!'
     
-    import db
-    db.init_app(app)
+    from flaskr.db import init_app
+    init_app(app)
 
     celery_init_app(app)
-    import tasks
+    
     return app
 
 
-app = Flask(__name__)
+# if __name__ == "__main__":
+#     app = create_app()
+
 
