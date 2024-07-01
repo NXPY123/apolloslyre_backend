@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS post;
+DROP TABLE IF EXISTS files;
 
 CREATE TABLE user (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,5 +19,5 @@ CREATE TABLE post (
 
 CREATE TABLE files (
     unique_filename TEXT PRIMARY KEY,
-    file_path TEXT NOT NULL,
-)
+    file_path TEXT NOT NULL
+);
