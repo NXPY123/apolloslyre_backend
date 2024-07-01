@@ -15,3 +15,8 @@ CREATE TABLE post (
   body TEXT NOT NULL,
   FOREIGN KEY (author_id) REFERENCES user (id)
 );
+
+CREATE TABLE files (
+    unique_filename TEXT PRIMARY KEY,
+    file_path TEXT NOT NULL,
+)
