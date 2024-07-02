@@ -49,7 +49,7 @@ def upload_file():
         # STore unique_filename and file_path in the database
         db.execute('INSERT INTO files (unique_filename, file_path) VALUES (?, ?)', (unique_filename, file_path))
         db.commit()
-        
+        print("ADSS")
         # Send the file_path to the task queue. Get the id of the task
         task = extract_epub.delay(file_path, unique_filename)
         task_id = task.id

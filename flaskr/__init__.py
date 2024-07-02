@@ -3,6 +3,7 @@ import os
 from flask import Flask
 from flask_restful import Resource, Api
 from celery import Celery, Task
+from flaskr.model import init_model_and_tokenizer, model, tokenizer
 
 # Change redis url to your redis server when deploying
 # Setup redis server on deploying
@@ -34,6 +35,7 @@ def celery_init_app(app: Flask):
 def create_app(test_config=None):
 
     # create and configure the app
+    print("STARTING APP")
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev',
@@ -42,6 +44,7 @@ def create_app(test_config=None):
       
     app.config['UPLOAD_FOLDER'] = os.path.join(app.instance_path, 'uploads')
     app.config["PROCESSED_FOLDER"] = os.path.join(app.instance_path, 'processed')
+    app.config["MODEL_PATH"] = os.path.join(app.instance_path, 'big-bird')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     app.config['CORS_HEADER'] = 'application/json'
     app.config.from_mapping(
@@ -53,6 +56,8 @@ def create_app(test_config=None):
         result_serializer='json',
     ),
 )
+
+    init_model_and_tokenizer(app.config["MODEL_PATH"])
 
     if test_config is None:
         # load the instance config, if it exists, when not testing

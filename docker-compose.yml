@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: flask run --host=0.0.0.0
+    volumes:
+      - .:/app
+      - ./instance:/app/instance
+    ports:
+      - "5001:5000"
+    depends_on:
+      - redis
+    environment:
+      FLASK_APP: flaskr
+      FLASK_ENV: development
+    entrypoint: ["sh", "-c", "flask --app flaskr init-db && flask run --host=0.0.0.0 && celery -A make_celery worker --loglevel=info"]
+
+  celery_worker:
+    build: .
+    command: celery -A make_celery worker --loglevel=info
+    volumes:
+      - .:/app
+      - ./instance:/app/instance
+    depends_on:
+      - redis
+    environment:
+      FLASK_APP: flaskr
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
