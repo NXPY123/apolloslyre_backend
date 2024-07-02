@@ -48,3 +48,6 @@ urllib3==2.2.2
 vine==5.1.0
 wcwidth==0.2.13
 Werkzeug==3.0.3
+
+
+/home/neeraj21bcs106/apolloslyre_backend/venv
