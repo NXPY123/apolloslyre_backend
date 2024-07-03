@@ -11,6 +11,7 @@ cd apolloslyre_backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+pip install --index-url https://test.pypi.org/simple/ --no-deps epubExtractionPackage-NY --upgrade
 ```
 
 Step 3: Put the model in the instance directory
