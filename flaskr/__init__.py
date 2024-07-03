@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from flask_restful import Resource, Api
 from celery import Celery, Task
-from flaskr.model import init_model_and_tokenizer, model, tokenizer
+from flaskr.model import init_model_and_tokenizer
 
 # Change redis url to your redis server when deploying
 # Setup redis server on deploying
@@ -69,16 +69,14 @@ def create_app(test_config=None):
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+        os.makedirs(app.config['PROCESSED_FOLDER'])
     except OSError:
         pass
 
     from flaskr.routes import main
     app.register_blueprint(main)
 
-    # a simple page that says hello
-    @app.route('/hello')
-    def hello():
-        return 'Hello, World!'
     
     from flaskr.db import init_app
     init_app(app)
