@@ -4,8 +4,9 @@ from flask import current_app
 import os
 import json
 import torch
-from flaskr.model import model, tokenizer
 from concurrent.futures import ThreadPoolExecutor
+from flaskr.model import model, tokenizer
+from transformers import BigBirdForSequenceClassification, BigBirdTokenizer
 
 
 playlists = {
@@ -36,7 +37,7 @@ def process_chapter(model, tokenizer, label_to_genre, chapter_name, text):
 
 @shared_task
 def extract_epub(epub_path,unique_filename):
-
+    print(model, tokenizer)
     print("Extracting epub")
     # Extract the epub
     extractor = epubextract.EpubExtractorFactory.get_extractor(epub_path)
@@ -55,10 +56,17 @@ def extract_epub(epub_path,unique_filename):
     #     predicted_class = logits.argmax().item()
     #     genre = label_to_genre[predicted_class]
     #     chapter_mood.append((chapter_name, genre))
+    # model_path = current_app.config["MODEL_PATH"]
+    # model = BigBirdForSequenceClassification.from_pretrained(model_path)
+    # tokenizer = BigBirdTokenizer.from_pretrained(model_path)
     with ThreadPoolExecutor() as executor:
         futures = [executor.submit(process_chapter, model, tokenizer, label_to_genre, chapter_name, text) for chapter_name, text in content]
         for future in futures:
-            chapter_mood.append(future.result())
+            try:
+                chapter_mood.append(future.result())
+            except Exception as e:
+                print(f"An error occured while processing a chapter: {e}")
+                continue
 
     print("Predicted moods")
 
