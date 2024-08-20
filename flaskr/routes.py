@@ -17,13 +17,12 @@ ALLOWED_EXTENSIONS = {'epub'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Unique ID generation for the file
 def save_file_with_unique_id(file):
-    '''
-    Generate a unique id for the file and save it to the UPLOAD_FOLDER
-    '''
     unique_id = str(uuid.uuid4())
     filename = secure_filename(file.filename)
     unique_filename = f"{unique_id}_{filename}"
+    # Save it to the UPLOAD_FOLDER
     file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
     file.save(file_path)
     return unique_filename, file_path
