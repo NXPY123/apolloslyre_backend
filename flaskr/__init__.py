@@ -1,30 +1,25 @@
 import os
 
 from flask import Flask
-from flask_restful import Resource, Api
 from celery import Celery, Task
 from flaskr.model import init_model_and_tokenizer
+from flaskr.config import Config, DevelopmentConfig, ProductionConfig, TestingConfig
 
 # Change redis url to your redis server when deploying
 # Setup redis server on deploying
+# Set FLASK_INSTANCE_PATH environment variable to the path of the instance folder
+
 def celery_init_app(app: Flask):
-    class FlaskTask(Task):
-        def __call__(self, *args: object, **kwargs: object) -> object:
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery_app = Celery(app.name, task_cls=FlaskTask)
-    celery_app.config_from_object(app.config["CELERY"])
-    celery_app.set_default()
-
-    TaskBase = celery_app.Task
-    class ContextTask(TaskBase):
+    class ContextTask(Task):
         abstract = True
 
         def __call__(self, *args, **kwargs):
             with app.app_context():
-                return TaskBase.__call__(self, *args, **kwargs)
+                return super().__call__(*args, **kwargs)
 
+    celery_app = Celery(app.name, task_cls=ContextTask)
+    celery_app.config_from_object(app.config["CELERY"])
+    celery_app.set_default()
     celery_app.Task = ContextTask
 
 
@@ -32,50 +27,49 @@ def celery_init_app(app: Flask):
     return celery_app
 
 
-def create_app(test_config=None):
+def create_app():
 
-    # create and configure the app
     print("STARTING APP")
+
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
-        SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
-    )
-      
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.instance_path, 'uploads')
-    app.config["PROCESSED_FOLDER"] = os.path.join(app.instance_path, 'processed')
-    app.config["MODEL_PATH"] = os.path.join(app.instance_path, 'big-bird')
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-    app.config['CORS_HEADER'] = 'application/json'
-    app.config.from_mapping(
-    CELERY=dict(
-        broker_url='redis://localhost:6379/0',
-        result_backend='redis://localhost:6379/0',
-        task_track_started=True,
-        task_ignore_result=False,
-        result_serializer='json',
-    ),
-)
 
-    init_model_and_tokenizer(app.config["MODEL_PATH"])
+    flask_env = os.getenv('FLASK_ENV', 'development')
 
-    if test_config is None:
-        # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
-    else:
-        # load the test config if passed in
-        app.config.from_mapping(test_config)
+    if flask_env == 'development':
+        app.config.from_object(DevelopmentConfig)
 
-    # ensure the instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-        os.makedirs(app.config['UPLOAD_FOLDER'])
-        os.makedirs(app.config['PROCESSED_FOLDER'])
-    except OSError:
-        pass
+        init_model_and_tokenizer(app.config["MODEL_PATH"])
 
-    from flaskr.routes import main
-    app.register_blueprint(main)
+        try:
+            os.makedirs(app.instance_path)
+            os.makedirs(app.config['UPLOAD_FOLDER'])
+            os.makedirs(app.config['PROCESSED_FOLDER'])
+        except OSError:
+            pass
+
+
+    elif flask_env == 'production':
+        app.config.from_object(ProductionConfig)
+        
+        try:
+            os.makedirs(app.instance_path)
+        
+        except OSError:
+            pass
+    
+    elif flask_env == 'testing': # Configure for testing later
+        app.config.from_object(TestingConfig)
+        init_model_and_tokenizer(app.config["MODEL_PATH"])
+        
+        try:
+            os.makedirs(app.instance_path)
+        
+        except OSError:
+            pass
+
+
+    from flaskr.routes import epub
+    app.register_blueprint(epub)
 
     
     from flaskr.db import init_app

@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify, current_app, Flask
-
 from werkzeug.utils import secure_filename
 import os
 import uuid
@@ -8,7 +7,7 @@ from .db import get_db
 
 from .tasks import extract_epub
 
-main = Blueprint('main', __name__)
+epub = Blueprint('epub', __name__)
 
 ALLOWED_EXTENSIONS = {'epub'}
 
@@ -27,7 +26,7 @@ def save_file_with_unique_id(file):
     file.save(file_path)
     return unique_filename, file_path
 
-@main.route('/upload', methods=['POST'])
+@epub.route('/upload', methods=['POST'])
 def upload_file():
 
 
@@ -43,12 +42,11 @@ def upload_file():
 
         unique_filename, file_path = save_file_with_unique_id(file)
         print(unique_filename, file_path)
-        # Store the file_path in the database
         db = get_db()
-        # STore unique_filename and file_path in the database
         db.execute('INSERT INTO files (unique_filename, file_path) VALUES (?, ?)', (unique_filename, file_path))
         db.commit()
         print("ADSS")
+        
         # Send the file_path to the task queue. Get the id of the task
         task = extract_epub.delay(file_path, unique_filename)
         task_id = task.id
@@ -61,7 +59,7 @@ def upload_file():
     
 
 # Endpoint to get the status of the task
-@main.route('/status', methods=['GET'])
+@epub.route('/status', methods=['GET'])
 def task_status():
     task_id = request.args.get('task_id')
     task = extract_epub.AsyncResult(task_id)
@@ -72,7 +70,7 @@ def task_status():
     return jsonify(response), 200
 
 # Endpoint to get the processed file
-@main.route('/processed', methods=['GET'])
+@epub.route('/processed', methods=['GET'])
 def processed_file():
     unique_filename = request.args.get('unique_filename')
     file_path = os.path.join(current_app.config['PROCESSED_FOLDER'], unique_filename)

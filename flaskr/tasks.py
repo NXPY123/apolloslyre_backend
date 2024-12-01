@@ -4,9 +4,7 @@ from flask import current_app
 import os
 import json
 import torch
-from concurrent.futures import ThreadPoolExecutor
-from flaskr.model import model, tokenizer
-from transformers import BigBirdForSequenceClassification, BigBirdTokenizer
+import requests
 
 
 playlists = {
@@ -25,19 +23,27 @@ playlists = {
 
 label_to_genre = {0: 'Electronic', 1: 'Adventure', 2: 'Mystery/Noir', 3: 'Classical', 4: 'Cinematic', 5: 'Horror', 6: 'Romantic', 7: 'Acoustic/Folk', 8: 'Ambient'}
 
-def process_chapter(model, tokenizer, label_to_genre, chapter_name, text):
-    inputs = tokenizer(text, return_tensors='pt', padding='max_length', truncation=True, max_length=4096)
-    with torch.no_grad():  # Disable gradient calculation for inference
-        outputs = model(**inputs)
-    logits = outputs.logits
-    predicted_class = logits.argmax().item()
-    genre = label_to_genre[predicted_class]
-    return chapter_name, genre
+
+def send_api_request(data):
+
+    url = "http://localhost:8080/predictions/bigbird"
+    # Comvert list of tuples to list of lists
+    request_data = [{"data": text, "chapter": chapter} for chapter, text in data]
+
+    response = requests.post(
+        url, 
+        headers={"Content-Type": "application/json"}, 
+        data=json.dumps(request_data)
+    )
+
+    return response.json()
+
+
 
 
 @shared_task
 def extract_epub(epub_path,unique_filename):
-    print(model, tokenizer)
+
     print("Extracting epub")
     # Extract the epub
     extractor = epubextract.EpubExtractorFactory.get_extractor(epub_path)
@@ -49,34 +55,20 @@ def extract_epub(epub_path,unique_filename):
     chapter_mood = []
     if content is None:
         raise Exception("An error occured while extracting the content of the epub file. Please check the file and try again.")
-    # for (chapter_name, text) in content:
-    #     inputs = tokenizer(text, return_tensors='pt', padding='max_length', truncation=True, max_length=4096)
-    #     outputs = model(**inputs)
-    #     logits = outputs.logits
-    #     predicted_class = logits.argmax().item()
-    #     genre = label_to_genre[predicted_class]
-    #     chapter_mood.append((chapter_name, genre))
-    # model_path = current_app.config["MODEL_PATH"]
-    # model = BigBirdForSequenceClassification.from_pretrained(model_path)
-    # tokenizer = BigBirdTokenizer.from_pretrained(model_path)
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_chapter, model, tokenizer, label_to_genre, chapter_name, text) for chapter_name, text in content]
-        for future in futures:
-            try:
-                chapter_mood.append(future.result())
-            except Exception as e:
-                print(f"An error occured while processing a chapter: {e}")
-                continue
+    
 
+    # Pass the list of tuples as a list of dictionary to the inference server via the API
+    predictions = send_api_request(content)
     print("Predicted moods")
 
-    # Assume we get a list of tuples [(chapter_title, mood)]
 
     chapter_playlists = {}
     
-    for chapter, mood in chapter_mood:
+    for prediction in predictions:
         # Retrieve playlist url for each mood
         # Playlist Logic here
+        chapter = list(prediction.keys())[0]
+        mood = label_to_genre[prediction[chapter]]
        
         playlist_url = playlists[mood.lower()]
 

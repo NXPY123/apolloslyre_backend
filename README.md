@@ -8,7 +8,7 @@ git clone https://github.com/NXPY123/apolloslyre_backend.git
 Step 2: Create a virtual environment and install dependencies
 ```bash
 cd apolloslyre_backend
-python3 -m venv venv
+python3.9 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 pip install --index-url https://test.pypi.org/simple/ --no-deps epubExtractionPackage-NY --upgrade
@@ -25,17 +25,23 @@ cd ..
 
 Step 4: Initialize and create the database
 ```bash
-flask --app flaskr init-db
+export FLASK_APP=flaskr FLASK_ENV=development 
+python -m flask init-db            
 ```
 
 Step 5: Start redis server on port 6379
 
 Step 6: Start the celery worker
 ```bash
-celery -A make_celery worker -P threads --loglevel=info 
+python -m celery -A make_celery worker -P threads --loglevel=info 
 ```
 
-Step 7: Start the flask server
+Step 7: Set instance path
+```bash
+ export FLASK_INSTANCE_PATH=/path/to/instance
+``` 
+
+Step 8: Start the flask server
 ```bash
 flask --app flaskr run --debug
 ```

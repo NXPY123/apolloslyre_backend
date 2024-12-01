@@ -17,9 +17,11 @@ def get_db():
 def init_db():
     db = get_db()
 
-    with current_app.open_resource('schema.sql') as f:
-        db.executescript(f.read().decode('utf8'))
-
+    try:
+        with current_app.open_resource('schema.sql') as f:
+            db.executescript(f.read().decode('utf8'))
+    except sqlite3.OperationalError:
+        print("Table already exists")
 
 @click.command('init-db')
 def init_db_command():
