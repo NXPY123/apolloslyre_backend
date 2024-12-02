@@ -28,15 +28,18 @@ def send_api_request(data):
 
     url = "http://localhost:8080/predictions/bigbird"
     # Comvert list of tuples to list of lists
-    request_data = [{"data": text, "chapter": chapter} for chapter, text in data]
+    request_data = [{"data": text.decode("utf-8") if isinstance(text, bytes) else text, "chapter": chapter.decode("utf-8") if isinstance(chapter, bytes) else chapter} for chapter, text in data]
+    # Print the first key value pair
+    responses = []
+    for request in request_data:
+        response = requests.post(
+            url, 
+            headers={"Content-Type": "application/json"}, 
+            data=json.dumps([request])
+        )
+        responses.append(response.json()[0])
 
-    response = requests.post(
-        url, 
-        headers={"Content-Type": "application/json"}, 
-        data=json.dumps(request_data)
-    )
-
-    return response.json()
+    return responses
 
 
 
@@ -48,11 +51,11 @@ def extract_epub(epub_path,unique_filename):
     # Extract the epub
     extractor = epubextract.EpubExtractorFactory.get_extractor(epub_path)
     content = extractor.extract_content()
-    
+
     print("Extracted content")
     # Send a request to the API
     # API Logic here
-    chapter_mood = []
+
     if content is None:
         raise Exception("An error occured while extracting the content of the epub file. Please check the file and try again.")
     
@@ -61,7 +64,7 @@ def extract_epub(epub_path,unique_filename):
     predictions = send_api_request(content)
     print("Predicted moods")
 
-
+    print(predictions)
     chapter_playlists = {}
     
     for prediction in predictions:

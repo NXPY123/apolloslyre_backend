@@ -41,11 +41,15 @@ def create_app():
         init_model_and_tokenizer(app.config["MODEL_PATH"])
 
         try:
-            os.makedirs(app.instance_path)
-            os.makedirs(app.config['UPLOAD_FOLDER'])
-            os.makedirs(app.config['PROCESSED_FOLDER'])
+            if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                os.makedirs(app.config['UPLOAD_FOLDER'])
+            if not os.path.exists(app.config['PROCESSED_FOLDER']):
+                os.makedirs(app.config['PROCESSED_FOLDER'])
+            if not os.path.exists(app.config['MODEL_PATH']):
+                os.makedirs(app.config['MODEL_PATH'])
+                
         except OSError:
-            pass
+            print("Error creating directories")
 
 
     elif flask_env == 'production':
@@ -80,7 +84,7 @@ def create_app():
     return app
 
 
-# if __name__ == "__main__":
-#     app = create_app()
+if __name__ == "__main__":
+    app = create_app()
 
 

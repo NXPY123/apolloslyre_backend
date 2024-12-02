@@ -38,12 +38,12 @@ python -m celery -A make_celery worker -P threads --loglevel=info
 
 Step 7: Set instance path
 ```bash
- export FLASK_INSTANCE_PATH=/path/to/instance
+export FLASK_INSTANCE_PATH=/path/to/instance
 ``` 
 
 Step 8: Start the flask server
 ```bash
-flask --app flaskr run --debug
+python -m flask run --debug --host=0.0.0.0 --port=8000  
 ```
 
 # Starting the Inference Server
@@ -103,7 +103,7 @@ docker build -t bigbird-torchserve .
 
 Step 7: Run the docker image
 ```bash
-docker run -d -p 8080:8080 -p 8081:8081 --name bigbird-server bigbird-torchserve
+ docker run -d -p 8080:8080 -p 8081:8081 --memory=8g --cpus=4 --name bigbird-server bigbird-torchserve
 ```
 
 Step 8: Test the server
