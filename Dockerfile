@@ -25,6 +25,8 @@ COPY . .
 RUN mkdir -p /app/instance/uploads
 RUN mkdir -p /app/instance/processed
 
+# Run the application
+#CMD ["flask", "--app", "flaskr", "init-db", "&&", "flask", "run", "--host=0.0.0.0", "--port=8000"]
 
 # Expose the port for Flask
-EXPOSE 5000
+EXPOSE 8000

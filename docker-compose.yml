@@ -1,35 +1,80 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
-    command: flask run --host=0.0.0.0
-    volumes:
-      - .:/app
-      - ./instance:/app/instance
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask_server
     ports:
-      - "5001:5000"
-    depends_on:
-      - redis
+      - "8001:8000"
     environment:
-      FLASK_APP: flaskr
-      FLASK_ENV: development
-    entrypoint: ["sh", "-c", "flask --app flaskr init-db && flask run --host=0.0.0.0 && celery -A make_celery worker --loglevel=info"]
-
-  celery_worker:
-    build: .
-    command: celery -A make_celery worker --loglevel=info
+      - FLASK_ENV=production
+      - FLASK_APP=flaskr
+      - FLASK_INSTANCE_PATH=/app/instance
+      - DATABASE=postgresql://user:password@db:5432/mydb
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SHARED_VOLUME_PATH=/app/shared
+      - SECRET_KEY=thisisaverysecretkey
     volumes:
       - .:/app
-      - ./instance:/app/instance
+      - shared_data:/app/instance
     depends_on:
       - redis
-    environment:
-      FLASK_APP: flaskr
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-
+      #- db
+      - torchserve
+      #- celery
+    entrypoint: ["sh", "-c", "flask run --host=0.0.0.0 --port=8000"]
+    
   redis:
-    image: "redis:alpine"
+    image: redis:7
+    container_name: redis_broker
     ports:
       - "6379:6379"
+
+  # db: # Do we need the db service?
+  #   image: postgres:15
+  #   container_name: postgres_db
+  #   environment:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: mydb
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    command: celery -A make_celery worker -P threads --loglevel=info 
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=flaskr
+      - FLASK_INSTANCE_PATH=/app/instance
+      - DATABASE=postgresql://user:password@db:5432/mydb
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SHARED_VOLUME_PATH=/app/shared
+      - SECRET_KEY=thisisaverysecretkey
+    volumes:
+      - shared_data:/app/instance
+    depends_on:
+      - redis
+
+  torchserve:
+    build:
+      context: ./Serving
+      dockerfile: TorchServeDockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - shared_data:/app/shared # Is this required?
+
+volumes:
+  shared_data:
+  #db_data:

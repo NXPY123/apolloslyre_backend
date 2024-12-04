@@ -32,8 +32,18 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    DATABASE = 'sqlite:///prod_db.sqlite'
+    DATABASE = 'postgresql://user:password@db:5432/mydb'
+    CELERY = {
+        'broker_url': 'redis://redis:6379/0',
+        'result_backend': 'redis://redis:6379/0',
+        'task_track_started': True,
+        'task_ignore_result': False,
+        'result_serializer': 'json',
+    }
     SECRET_KEY = os.getenv('SECRET_KEY')  # Fetch from environment
+    UPLOAD_FOLDER = os.path.join(os.getenv('FLASK_INSTANCE_PATH', '/tmp'), 'uploads')
+    PROCESSED_FOLDER = os.path.join(os.getenv('FLASK_INSTANCE_PATH', '/tmp'), 'processed')
+
 
 class TestingConfig(Config):
     """Testing configuration"""

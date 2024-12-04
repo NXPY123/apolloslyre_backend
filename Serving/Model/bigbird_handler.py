@@ -15,29 +15,30 @@ class BigBirdHandler:
 
     def preprocess(self, data):
         print("PREPROCESSING")
-        print(data)
+        #print(data)
         texts = [item["data"] for item in data[0]["body"]]
         return self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
 
     def inference(self, inputs):
         print("INFERENCE")
-        print(inputs)
+        #print(inputs)
         with torch.no_grad():
             outputs = self.model(**inputs)
         logits = outputs.logits
         predictions = torch.argmax(logits, dim=-1)
         return predictions.tolist()
 
-    def postprocess(self, inference_output):
+    def postprocess(self, inference_output, data):
         print("POSTPROCESSING")
-        print(inference_output)
-        return [{"label": pred} for pred in inference_output]
+        #print(inference_output)
+        # Return a list of dictionaries
+        return [{data[0]["body"][i]["chapter"]: inference_output[i]} for i in range(len(inference_output))]
 
     def handle(self, data, context):
         """Handle the incoming request."""
         try:
             print("HANDLING")
-            print(data)
+            #print(data)
             # Step 1: Preprocess the input data
             inputs = self.preprocess(data)
             
@@ -45,6 +46,6 @@ class BigBirdHandler:
             outputs = self.inference(inputs)
             
             # Step 3: Postprocess the results
-            return [self.postprocess(outputs)]
+            return [self.postprocess(outputs,data)]
         except Exception as e:
             raise ValueError(f"Error during model inference: {e}")

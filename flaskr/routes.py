@@ -3,7 +3,7 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 from flask_cors import CORS
-from .db import get_db
+#from .db import get_db
 
 from .tasks import extract_epub
 
@@ -42,9 +42,9 @@ def upload_file():
 
         unique_filename, file_path = save_file_with_unique_id(file)
         print(unique_filename, file_path)
-        db = get_db()
-        db.execute('INSERT INTO files (unique_filename, file_path) VALUES (?, ?)', (unique_filename, file_path))
-        db.commit()
+        # db = get_db()
+        # db.execute('INSERT INTO files (unique_filename, file_path) VALUES (?, ?)', (unique_filename, file_path))
+        # db.commit()
         print("ADSS")
         
         # Send the file_path to the task queue. Get the id of the task

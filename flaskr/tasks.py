@@ -26,8 +26,17 @@ label_to_genre = {0: 'Electronic', 1: 'Adventure', 2: 'Mystery/Noir', 3: 'Classi
 
 def send_api_request(data):
 
-    url = "http://localhost:8080/predictions/bigbird"
-    # Comvert list of tuples to list of lists
+    # Check environment variable to determine if we are in development or production
+    # If in development, use the local API
+    # If in production, use the deployed API
+    if os.getenv("FLASK_ENV") == "development":
+        url = "http://localhost:8080/predictions/bigbird"
+    elif os.getenv("FLASK_ENV") == "production":
+        url = "http://torchserve:8080/predictions/bigbird"
+    else:
+        raise Exception("Environment not set. Please set the FLASK_ENV environment variable to either development or production.")
+    
+    # Convert list of tuples to list of lists
     request_data = [{"data": text.decode("utf-8") if isinstance(text, bytes) else text, "chapter": chapter.decode("utf-8") if isinstance(chapter, bytes) else chapter} for chapter, text in data]
     # Print the first key value pair
     responses = []

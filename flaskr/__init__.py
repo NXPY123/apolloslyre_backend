@@ -56,7 +56,12 @@ def create_app():
         app.config.from_object(ProductionConfig)
         
         try:
-            os.makedirs(app.instance_path)
+            if not os.path.exists(app.instance_path):
+                os.path.makedirs(app.instance_path)
+            if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                os.makedirs(app.config['UPLOAD_FOLDER'])
+            if not os.path.exists(app.config['PROCESSED_FOLDER']):
+                os.makedirs(app.config['PROCESSED_FOLDER'])
         
         except OSError:
             pass
@@ -76,8 +81,8 @@ def create_app():
     app.register_blueprint(epub)
 
     
-    from flaskr.db import init_app
-    init_app(app)
+    #from flaskr.db import init_app
+    #init_app(app)
 
     celery_init_app(app)
     

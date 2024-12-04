@@ -1,4 +1,51 @@
-# Starting the Backend
+# Setting up the Backend with Docker Compose
+Step 1: Clone the repo
+```bash
+git clone https://github.com/NXPY123/apolloslyre_backend.git
+```
+
+Step 2: Add the model to the Serving/Model directory
+```bash
+cd apolloslyre_backend/Serving/Model
+mkdir big-bird
+cd big-bird
+// Add the model files in the big-bird directory
+```
+
+Step 3: Generate the .mar file
+```bash
+cd apolloslyre_backend/Serving/Model
+torch-model-archiver \
+    --model-name bigbird \
+    --version 1.0 \
+    --serialized-file big-bird/model.safetensors \
+    --extra-files "big-bird/tokenizer_config.json,big-bird/special_tokens_map.json,big-bird/config.json,big-bird/spiece.model,bigbird_handler.py" \
+    --handler bigbird_handler.py \
+    --export-path ./model-store
+```
+
+Step 4: Build the docker images
+```bash
+cd apolloslyre_backend
+docker-compose build
+```
+
+Step 5: Start the docker containers
+```bash
+docker-compose up
+```
+
+Step 6: Test the server
+```bash
+curl -X POST -F "file=@/path/to/epub/file.epub" http://localhost:8001/upload
+curl -X GET "http://localhost:8001/status?task_id=task_id_returned_from_previous_request"
+curl -X GET "http://localhost:8001/processed?unique_filename=unique_filename_returned_from_first_request"
+```
+
+
+# Setting up the Backend without Docker Compose
+
+## Starting the Backend
 
 Step 1: Clone the repo
 ```bash
@@ -46,7 +93,7 @@ Step 8: Start the flask server
 python -m flask run --debug --host=0.0.0.0 --port=8000  
 ```
 
-# Starting the Inference Server
+## Starting the Inference Server
 
 Step 1: Clone the repo if not already done
 ```bash
